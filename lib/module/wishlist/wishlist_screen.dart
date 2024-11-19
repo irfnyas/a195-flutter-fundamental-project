@@ -4,27 +4,22 @@ import 'package:provider/provider.dart';
 import '../../data/model/restaurant_model.dart';
 import '../../data/service/api_service.dart';
 import '../../util/view_result_state.dart';
-import '../notification/notification_provider.dart';
-import '../settings/settings_provider.dart';
-import 'home_provider.dart';
+import 'wishlist_provider.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class WishlistScreen extends StatefulWidget {
+  const WishlistScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<WishlistScreen> createState() => _WishlistScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _WishlistScreenState extends State<WishlistScreen> {
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       if (!mounted) return;
-      context.read<HomeProvider>().fetchData();
-      if (context.read<SettingsProvider>().isNotifEnabled) {
-        context.read<NotificationProvider>().scheduleDailyNotification();
-      }
+      context.read<WishlistProvider>().fetchData();
     });
   }
 
@@ -32,28 +27,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Restaurant'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite_rounded),
-            onPressed: () =>
-                context.read<HomeProvider>().navToWishlist(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_rounded),
-            onPressed: () =>
-                context.read<HomeProvider>().navToSettings(context),
-          ),
-        ],
+        title: const Text('Wishlist'),
       ),
       body: Center(
-        child: Consumer<HomeProvider>(
+        child: Consumer<WishlistProvider>(
           builder: (_, provider, __) {
             return switch (provider.resultState) {
-              ViewErrorState(error: var message) => HomeErrorView(
+              ViewNoneState() => const WishlistNoneView(),
+              ViewErrorState(error: var message) => WishlistErrorView(
                   message: message,
                 ),
-              ViewLoadedState(restaurants: var restaurants) => HomeLoadedView(
+              ViewLoadedState(restaurants: var restaurants) =>
+                WishlistLoadedView(
                   restaurants: restaurants ?? [],
                 ),
               _ => const CircularProgressIndicator(),
@@ -65,8 +50,34 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class HomeErrorView extends StatelessWidget {
-  const HomeErrorView({super.key, this.message});
+class WishlistNoneView extends StatelessWidget {
+  const WishlistNoneView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.food_bank_rounded,
+            size: 40,
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'You have no wishlist.\nLet\'s add one into your list now!',
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class WishlistErrorView extends StatelessWidget {
+  const WishlistErrorView({super.key, this.message});
   final String? message;
 
   @override
@@ -92,8 +103,8 @@ class HomeErrorView extends StatelessWidget {
   }
 }
 
-class HomeLoadedView extends StatelessWidget {
-  const HomeLoadedView({super.key, required this.restaurants});
+class WishlistLoadedView extends StatelessWidget {
+  const WishlistLoadedView({super.key, required this.restaurants});
   final List<Restaurant> restaurants;
 
   @override
@@ -122,17 +133,15 @@ class RestaurantCard extends StatelessWidget {
         vertical: 8,
       ),
       child: Stack(
+        alignment: Alignment.bottomRight,
         children: [
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Hero(
-                tag: restaurant.id ?? '',
-                child: Image.network(
-                  '${ApiService.imageUrl}/small/${restaurant.pictureId}',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox(),
-                ),
+              child: Image.network(
+                '${ApiService.imageUrl}/small/${restaurant.pictureId}',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox(),
               ),
             ),
           ),
@@ -174,23 +183,41 @@ class RestaurantCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 100),
-                Text(
-                  restaurant.name ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade50,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            restaurant.name ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey.shade50,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            restaurant.city ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Colors.grey.shade50,
+                                ),
+                          ),
+                        ],
                       ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  restaurant.city ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade50,
-                      ),
+                    ),
+                    const SizedBox(width: kToolbarHeight),
+                  ],
                 ),
               ],
             ),
@@ -201,9 +228,22 @@ class RestaurantCard extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: () => context
-                    .read<HomeProvider>()
+                    .read<WishlistProvider>()
                     .navToDetail(context, restaurant),
               ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            alignment: Alignment.bottomRight,
+            child: FloatingActionButton.small(
+              heroTag: null,
+              onPressed: () => context
+                  .read<WishlistProvider>()
+                  .removeFromWishlist(context, restaurant),
+              elevation: 0,
+              shape: const CircleBorder(),
+              child: const Icon(Icons.delete_rounded),
             ),
           ),
         ],

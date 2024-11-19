@@ -28,7 +28,7 @@ class Restaurant {
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
     return Restaurant(
-      id: json['id'],
+      id: json['restaurantId'] ?? json['id'],
       name: json['name'],
       description: json['description'],
       pictureId: json['pictureId'],
@@ -60,6 +60,16 @@ class Restaurant {
                   ))
               .toList(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'restaurantId': id,
+      'name': name,
+      'pictureId': pictureId,
+      'city': city,
+      'rating': rating,
+    };
   }
 
   static List<Restaurant> fromArray(List? json) =>

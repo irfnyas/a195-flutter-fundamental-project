@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/api/api_service.dart';
 import '../../data/model/restaurant_model.dart';
+import '../../data/service/api_service.dart';
 import '../../util/view_result_state.dart';
 import 'detail_provider.dart';
 
@@ -54,6 +54,7 @@ class _DetailScreenState extends State<DetailScreen> {
                   ),
                 ViewLoadedState(restaurant: var restaurant) => DetailLoadedView(
                     restaurant: restaurant,
+                    isWishlisted: provider.isWishlisted,
                   ),
                 _ => const LinearProgressIndicator(),
               };
@@ -94,8 +95,13 @@ class DetailErrorView extends StatelessWidget {
 }
 
 class DetailLoadedView extends StatelessWidget {
-  const DetailLoadedView({super.key, required this.restaurant});
+  const DetailLoadedView({
+    super.key,
+    required this.restaurant,
+    required this.isWishlisted,
+  });
   final Restaurant? restaurant;
+  final bool isWishlisted;
 
   @override
   Widget build(BuildContext context) {
@@ -104,20 +110,47 @@ class DetailLoadedView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            restaurant?.name ?? '',
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            restaurant?.categories?.map((e) => e.name).join(', ') ?? '',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(fontStyle: FontStyle.italic),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      restaurant?.name ?? '',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      restaurant?.categories?.map((e) => e.name).join(', ') ??
+                          '',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontStyle: FontStyle.italic),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => context.read<DetailProvider>().switchWishlist(
+                      context,
+                      restaurant,
+                    ),
+                icon: Icon(
+                  isWishlisted
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                ),
+                style: IconButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Text(restaurant?.description ?? ''),

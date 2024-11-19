@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-import '../../data/api/api_service.dart';
 import '../../data/model/restaurant_model.dart';
+import '../../data/service/api_service.dart';
 import '../../util/route.dart';
 import '../../util/view_result_state.dart';
 
@@ -24,16 +24,30 @@ class HomeProvider extends ChangeNotifier {
       resultState = result.error == true
           ? ViewErrorState(result.message ?? '')
           : ViewLoadedState(restaurants: result.restaurants ?? []);
-    } on Exception catch (e) {
-      resultState = ViewErrorState('$e');
+    } on Exception catch (_) {
+      resultState = ViewErrorState(ApiService.exceptionMessage);
     }
   }
 
   void navToDetail(BuildContext context, Restaurant restaurant) {
     Navigator.pushNamed(
       context,
-      RouteEnum.detailRoute.name,
+      RouteEnum.detail.name,
       arguments: restaurant,
+    );
+  }
+
+  void navToSettings(BuildContext context) {
+    Navigator.pushNamed(
+      context,
+      RouteEnum.settings.name,
+    );
+  }
+
+  void navToWishlist(BuildContext context) {
+    Navigator.pushNamed(
+      context,
+      RouteEnum.wishlist.name,
     );
   }
 }
